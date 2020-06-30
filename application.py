@@ -34,12 +34,11 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db = SQL("postgres://dlkgvrbhudwgyw:19034ecfe931d4db09f89b02eca9b046c682e0a5408738b9b69f0c765948c5d0@ec2-3-223-21-106.compute-1.amazonaws.com:5432/d2jeqf9bef4184")
+db = SQL("sqlite:///finance.db")
 
 # Make sure API key is set
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
-
 
 @app.route("/")
 @login_required
@@ -51,7 +50,7 @@ def index():
     total_money = cash
 
     # Getting the stocks owned by the user
-    stocks = db.execute("SELECT * FROM :name", name=table_name(session["user_id"]))
+    stocks = db.execute(f"SELECT * FROM {table_name(session['user_id'])}")
 
     # Iterating over each stock
     for stock in stocks:
@@ -111,12 +110,12 @@ def buy():
         db.execute("UPDATE users SET cash=? WHERE id=?", cash-stock_amt, session["user_id"])
 
         # Log transaction
-        db.execute("INSERT INTO stock_info (user_id, symbol, name, shares, price) VALUES (:user_id, :symbol, :name, :shares, :price)"
-                    , user_id=session["user_id"], symbol=stock["symbol"], name=stock["name"]
+        db.execute("INSERT INTO stock_info (user_id, symbol, name, shares, price) VALUES (:user_id, :symbol, {table_name(session['user_id'])}, :shares, :price)"
+                    , symbol=stock["symbol"], name=stock["name"]
                     , shares=request.form.get("shares"), price=stock["price"])
 
         # Add stock
-        current = db.execute("SELECT * FROM :name WHERE symbol=:symbol", name=table_name(session["user_id"]), symbol=stock["symbol"])
+        current = db.execute(f"SELECT * FROM {table_name(session['user_id'])} WHERE symbol=:symbol", symbol=stock["symbol"])
 
         if len(current) == 0:
             db.execute("INSERT INTO :name (symbol, shares, avg, total_bought) VALUES (:symbol, :shares, :avg, :total_bought)"
@@ -318,7 +317,7 @@ def register():
                     username=request.form.get("username"), pwd=generate_password_hash(request.form.get("password")))
 
         # Create a new table to store user's stock data
-        db.execute("CREATE TABLE IF NOT EXISTS :name (symbol TEXT NOT NULL UNIQUE, shares INTEGER, avg NUMERIC, total_bought NUMERIC)", name=table_name(session["user_id"]))
+        db.execute('CREATE TABLE IF NOT EXISTS :name (symbol TEXT NOT NULL UNIQUE, shares INTEGER, avg NUMERIC, total_bought NUMERIC)', name=table_name(session["user_id"]))
 
         flash("Successfully created new user", "success")
 
