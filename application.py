@@ -33,13 +33,16 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# Configure CS50 Library to use SQLite database
-db = SQL("postgres://dlkgvrbhudwgyw:19034ecfe931d4db09f89b02eca9b046c682e0a5408738b9b69f0c765948c5d0@ec2-3-223-21-106.compute-1.amazonaws.com:5432/d2jeqf9bef4184")
-
 # Make sure API key is set
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
+# Make sure DATABASE url is set
+if not os.environ.get("DATABASE_URL"):
+    raise RuntimeError("DATABASE_URL not set")
+
+# Configure CS50 Library to use SQLite database
+db = SQL(os.environ.get("DATABASE_URL"))
 
 @app.route("/")
 @login_required
