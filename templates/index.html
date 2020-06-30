@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block main %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th>Shares</th>
+                <th>Price</th>
+                <th>Cost</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td>TOTAL</td>
+                <td colspan="4"></td>
+                <td>{{ total | usd}}</td>
+            </tr>
+        </tfoot>
+        <tbody>
+            {% for stock in stocks %}
+                <tr>
+                    <td>{{ stock.symbol }}</td>
+                    <td>{{ stock.name }}</td>
+                    <td>{{ stock.shares }}</td>
+                    <td>{{ stock.price | usd }}</td>
+                    <td>{{ stock.total_bought | usd }}</td>
+                    <td>
+                        <div>
+                            {{ (stock.price*stock.shares) | usd }}
+                        </div>
+                        {% with change = stock.price*stock.shares - stock.total_bought %}
+                            {% if change >= 0 %}
+                                <div style="color: green">
+                                    +{{ "$%.2f" | format(change) }} {{ "%.3f" | format((change/stock.total_bought)*100) }}%
+                                </div>
+                            {% else %}
+                                <div style="color: red">
+                                    -{{ "$%.2f" | format(change) | replace("-", "") }} {{ "%.3f" | format((change/stock.total_bought)*100) }}%
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                </tr>
+            {% endfor %}
+            <tr>
+                <td>CASH</td>
+                <td colspan="4"></td>
+                <td>{{ cash | usd }}</td>
+            </tr>
+        </tbody>
+    </table>
+{% endblock %}
