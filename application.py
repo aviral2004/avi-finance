@@ -15,6 +15,7 @@ app = Flask(__name__)
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 
 # Ensure responses aren't cached
 @app.after_request
