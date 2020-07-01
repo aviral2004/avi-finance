@@ -1,6 +1,7 @@
 import os
-
 from cs50 import SQL
+import sqlalchemy
+
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
 from flask_session import Session
 from tempfile import mkdtemp
@@ -10,20 +11,29 @@ from operator import itemgetter
 
 from helpers import apology, login_required, lookup, usd, table_name
 
+import urllib.parse
+import psycopg2
+urllib.parse.uses_netloc.append("postgres")
+url = urllib.parse.urlparse(os.environ["DATABASE_URL"])
+conn = psycopg2.connect(
+    database=url.path[1:],
+    user=url.username,
+    password=url.password,
+    host=url.hostname,
+    port=url.port
+)
+
 # Configure application
 app = Flask(__name__)
 
-# Ensure templates are auto-reloaded
-app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
-
 # Ensure responses aren't cached
-@app.after_request
-def after_request(response):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Expires"] = 0
-    response.headers["Pragma"] = "no-cache"
-    return response
+if app.config["DEBUG"]:
+    @app.after_request
+    def after_request(response):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Expires"] = 0
+        response.headers["Pragma"] = "no-cache"
+        return response
 
 # Custom filter
 app.jinja_env.filters["usd"] = usd
@@ -40,6 +50,35 @@ db = SQL(os.environ.get("DATABASE_URL"))
 # Make sure API key is set
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
+
+# start
+# added the below as part of Heroku post on Medium
+class SQL(object):
+    def __init__(self, url):
+        try:
+            self.engine = sqlalchemy.create_engine(url)
+        except Exception as e:
+            raise RuntimeError(e)
+    def execute(self, text, *multiparams, **params):
+        try:
+            statement = sqlalchemy.text(text).bindparams(*multiparams, **params)
+            result = self.engine.execute(str(statement.compile(compile_kwargs={"literal_binds": True})))
+            # SELECT
+            if result.returns_rows:
+                rows = result.fetchall()
+                return [dict(row) for row in rows]
+            # INSERT
+            elif result.lastrowid is not None:
+                return result.lastrowid
+            # DELETE, UPDATE
+            else:
+                return result.rowcount
+        except sqlalchemy.exc.IntegrityError:
+            return None
+        except Exception as e:
+            raise RuntimeError(e)
+# end
+
 
 @app.route("/")
 @login_required
@@ -119,15 +158,13 @@ def buy():
         current = db.execute(f"SELECT * FROM {table_name(session['user_id'])} WHERE symbol=:symbol", symbol=stock["symbol"])
 
         if len(current) == 0:
-            db.execute("INSERT INTO :name (symbol, shares, avg, total_bought) VALUES (:symbol, :shares, :avg, :total_bought)"
-                        , name=table_name(session["user_id"])
+            db.execute(f"INSERT INTO {table_name(session['user_id'])} (symbol, shares, avg, total_bought) VALUES (:symbol, :shares, :avg, :total_bought)"
                         , symbol = stock["symbol"]
                         , shares = request.form.get("shares")
                         , avg = float(stock["price"])
                         , total_bought = stock_amt)
         else:
-            db.execute("UPDATE :name SET shares=shares + :shares, avg=:avg, total_bought=total_bought + :value"
-                        , name=table_name(session["user_id"])
+            db.execute(f"UPDATE {table_name(session['user_id'])} SET shares=shares + :shares, avg=:avg, total_bought=total_bought + :value"
                         , shares = int(request.form.get("shares"))
                         , avg = (current[0]["total_bought"] + stock_amt)/float(current[0]["shares"] + int(request.form.get("shares")))
                         , value = stock_amt)
@@ -143,7 +180,7 @@ def buy():
 @login_required
 def sell():
     """Get all the stocks of the user"""
-    stocks = db.execute("SELECT symbol FROM :name", name=table_name(session["user_id"]))
+    stocks = db.execute(f"SELECT symbol FROM {table_name(session['user_id'])}")
 
     """Sell shares of stock"""
     if request.method == "POST":
@@ -153,7 +190,7 @@ def sell():
             flash("Please select a stock to sell", "danger")
             return render_template("sell.html", stocks=stocks)
 
-        stock = db.execute("SELECT * FROM :name WHERE symbol=:symbol", name=table_name(session["user_id"]), symbol=symbol)
+        stock = db.execute(f"SELECT * FROM {table_name(session['user_id'])} WHERE symbol=:symbol", symbol=symbol)
         if stock == None:
             flash("Please select a stock to sell", "danger                                                                                                                                                                                                                                                                                                                                                                                                   ")
             return render_template("sell.html", stocks=stocks)
@@ -185,12 +222,9 @@ def sell():
         shares_update = stock[0]["shares"] - shares
 
         if shares_update == 0:
-            db.execute("DELETE FROM :name WHERE symbol=:symbol"
-                        , name = table_name(session["user_id"])
-                        , symbol=symbol)
+            db.execute(f"DELETE FROM {table_name(session['user_id'])} WHERE symbol=:symbol", symbol=symbol)
         else:
-            db.execute("UPDATE :name SET shares=:shares, avg=:avg, total_bought=:total WHERE symbol=:symbol"
-                        , name = table_name(session["user_id"])
+            db.execute(f"UPDATE {table_name(session['user_id'])} SET shares=:shares, avg=:avg, total_bought=:total WHERE symbol=:symbol"
                         , shares = shares_update
                         , avg = total/float(shares_update)
                         , total = total
@@ -222,7 +256,7 @@ def leaderboard():
     users = db.execute("SELECT id, username, cash FROM users")
     for user in users:
         stock_value = 0
-        stocks = db.execute("SELECT * FROM :name", name=table_name(user["id"]))
+        stocks = db.execute(f"SELECT * FROM {table_name(session['user_id'])}")
         for stock in stocks:
             stock_value = lookup(stock["symbol"])["price"] * stock["shares"]
         user["money"] = user["cash"] + stock_value
@@ -286,11 +320,9 @@ def logout():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Register user"""
-
     session.clear()
 
     if request.method == "POST":
-
         """Validation"""
         # Ensure username was submitted
         if not request.form.get("username"):
@@ -298,7 +330,7 @@ def register():
             return render_template("register.html")
 
         # Ensure password was submitted
-        elif not request.form.get("password"):
+        if not request.form.get("password"):
             flash("password field must not be left empty", "danger")
             return render_template("register.html")
 
@@ -314,8 +346,9 @@ def register():
 
         """Initialising the user"""
         # Create a new user in the users table
-        session["user_id"] = db.execute("INSERT INTO users (username, hash) VALUES (:username, :pwd)",
-                    username=request.form.get("username"), pwd=generate_password_hash(request.form.get("password")))
+        session["user_id"] = db.execute("INSERT INTO users (username, hash) VALUES (:username, :pwd)"
+        , username = request.form.get("username")
+        , pwd = generate_password_hash(request.form.get("password")))
 
         # Create a new table to store user's stock data
         db.execute(f"CREATE TABLE IF NOT EXISTS {table_name(session['user_id'])} (symbol TEXT NOT NULL UNIQUE, shares INTEGER, avg NUMERIC, total_bought NUMERIC)")
@@ -338,3 +371,8 @@ def errorhandler(e):
 # Listen for errors
 for code in default_exceptions:
     app.errorhandler(code)(errorhandler)
+
+if __name__ == '__main__':
+     app.debug = True
+     port = int(os.environ.get("PORT", 5000))
+     app.run(host='0.0.0.0', port=port)
