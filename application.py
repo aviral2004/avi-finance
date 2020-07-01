@@ -53,7 +53,7 @@ db = SQL(os.environ.get("DATABASE_URL"))
 
 
 @app.route("/")
-@login_required
+# @login_required
 def index():
     """Show portfolio of stocks"""
     db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", "test", "test")
