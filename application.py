@@ -317,7 +317,7 @@ def register():
                     username=request.form.get("username"), pwd=generate_password_hash(request.form.get("password")))
 
         # Create a new table to store user's stock data
-        # db.execute(f"CREATE TABLE IF NOT EXISTS {table_name(session['user_id'])} (symbol TEXT NOT NULL UNIQUE, shares INTEGER, avg NUMERIC, total_bought NUMERIC)")
+        db.execute(f"CREATE TABLE IF NOT EXISTS {table_name(session['user_id'])} (symbol TEXT NOT NULL UNIQUE, shares INTEGER, avg NUMERIC, total_bought NUMERIC)")
 
         flash("Successfully created new user", "success")
 
