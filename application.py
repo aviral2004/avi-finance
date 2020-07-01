@@ -1,6 +1,5 @@
 import os
 from cs50 import SQL
-import sqlalchemy
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
 from flask_session import Session
@@ -11,17 +10,17 @@ from operator import itemgetter
 
 from helpers import apology, login_required, lookup, usd, table_name
 
-# import urllib.parse
-# import psycopg2
-# urllib.parse.uses_netloc.append("postgres")
-# url = urllib.parse.urlparse(os.environ["DATABASE_URL"])
-# conn = psycopg2.connect(
-#     database=url.path[1:],
-#     user=url.username,
-#     password=url.password,
-#     host=url.hostname,
-#     port=url.port
-# )
+import urlparse
+import psycopg2
+urlparse.uses_netloc.append("postgres")
+url = urlparse.urlparse(os.environ["DATABASE_URL"])
+conn = psycopg2.connect(
+ database=url.path[1:],
+ user=url.username,
+ password=url.password,
+ host=url.hostname,
+ port=url.port
+)
 
 # Configure application
 app = Flask(__name__)
@@ -45,7 +44,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db = SQL("postgres://dlkgvrbhudwgyw:19034ecfe931d4db09f89b02eca9b046c682e0a5408738b9b69f0c765948c5d0@ec2-3-223-21-106.compute-1.amazonaws.com:5432/d2jeqf9bef4184")
+db = SQL(os.environ["DATABASE_URL"])
 
 # # Make sure API key is set
 # if not os.environ.get("API_KEY"):
