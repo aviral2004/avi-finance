@@ -56,6 +56,8 @@ db = SQL(os.environ["DATABASE_URL"])
 def index():
     """Show portfolio of stocks"""
     db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", "test", "test")
+    print("succesfull")
+    return render_template("layout.html")
     # # Getting the cash in holding of the user
     # user = db.execute("SELECT cash FROM users WHERE id=:id", id=session["user_id"])[0]
     # cash = float(user["cash"])
@@ -74,7 +76,6 @@ def index():
     #     total_money += info["price"]*stock["shares"]
 
     # return render_template("index.html", stocks = stocks, cash = cash, total = total_money)
-    return render_template("layout.html")
 
 
 # @app.route("/quote", methods=["GET", "POST"])
