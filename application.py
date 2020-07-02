@@ -55,7 +55,7 @@ db = SQL(os.environ["DATABASE_URL"])
 # @login_required
 def index():
     """Show portfolio of stocks"""
-    db.execute("DELETE FROM users WHERE id=25;", "test", "test")
+    db.execute("DELETE FROM users WHERE id=25;")
     print("succesfull")
     return render_template("layout.html")
     # # Getting the cash in holding of the user
