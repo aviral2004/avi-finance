@@ -10,29 +10,29 @@ from operator import itemgetter
 
 from helpers import apology, login_required, lookup, usd, table_name
 
-import urllib.parse
-import psycopg2
-urllib.parse.uses_netloc.append("postgres")
-url = urllib.parse.urlparse(os.environ["DATABASE_URL"])
-conn = psycopg2.connect(
- database=url.path[1:],
- user=url.username,
- password=url.password,
- host=url.hostname,
- port=url.port
-)
+# import urllib.parse
+# import psycopg2
+# urllib.parse.uses_netloc.append("postgres")
+# url = urllib.parse.urlparse(os.environ["DATABASE_URL"])
+# conn = psycopg2.connect(
+#  database=url.path[1:],
+#  user=url.username,
+#  password=url.password,
+#  host=url.hostname,
+#  port=url.port
+# )
 
 # Configure application
 app = Flask(__name__)
 
-# Ensure responses aren't cached
-if app.config["DEBUG"]:
-    @app.after_request
-    def after_request(response):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Expires"] = 0
-        response.headers["Pragma"] = "no-cache"
-        return response
+# # Ensure responses aren't cached
+# if app.config["DEBUG"]:
+#     @app.after_request
+#     def after_request(response):
+#         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+#         response.headers["Expires"] = 0
+#         response.headers["Pragma"] = "no-cache"
+#         return response
 
 # Custom filter
 app.jinja_env.filters["usd"] = usd
