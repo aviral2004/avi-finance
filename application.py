@@ -326,6 +326,8 @@ def register():
 
         flash("Successfully created new user", "success")
 
+        print({session["user_id"]})
+
         # Redirect user to home page
         return redirect("/")
     else:
