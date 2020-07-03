@@ -52,7 +52,7 @@ db = SQL(os.environ["DATABASE_URL"])
 
 
 @app.route("/")
-# @login_required
+@login_required
 def index():
     """Show portfolio of stocks"""
     # Getting the cash in holding of the user
