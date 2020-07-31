@@ -63,4 +63,4 @@ def usd(value):
     return f"${value:,.2f}"
 
 def table_name(id):
-    return f"id_{id}"
+    return ("id_" + str(id))
