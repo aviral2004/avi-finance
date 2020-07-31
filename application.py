@@ -49,7 +49,7 @@ if not os.environ.get("API_KEY"):
 def index():
     """Show portfolio of stocks"""
     # Getting the cash in holding of the user
-    user = db.execute("SELECT cash FROM users WHERE id=:id", id=session["user_id"])[0]
+    user = db.execute("SELECT cash FROM users WHERE id=:id", id=str(session["user_id"]))[0]
     cash = float(user["cash"])
     total_money = cash
 
