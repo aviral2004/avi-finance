@@ -35,10 +35,17 @@ Session(app)
 
 # Configure CS50 Library to use SQLite database
 db = SQL("sqlite:///finance.db")
+
 # Make sure API key is set
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
+# Make sure DATABASE url is set
+if not os.environ.get("DATABASE_URL"):
+    raise RuntimeError("DATABASE_URL not set")
+
+# Configure CS50 Library to use SQLite database
+db = SQL(os.environ.get("DATABASE_URL"))
 
 @app.route("/")
 @login_required
