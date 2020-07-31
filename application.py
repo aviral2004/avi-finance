@@ -54,7 +54,7 @@ def index():
     total_money = cash
 
     # Getting the stocks owned by the user
-    stocks = db.execute("SELECT * FROM :name", name=str(table_name(session["user_id"])))
+    stocks = db.execute(f"SELECT * FROM {table_name(session["user_id"])}")
 
     # Iterating over each stock
     for stock in stocks:
