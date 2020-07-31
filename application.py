@@ -54,7 +54,7 @@ def index():
     total_money = cash
 
     # Getting the stocks owned by the user
-    stocks = db.execute("SELECT * FROM :name", name=table_name(session["user_id"]))
+    stocks = db.execute(f"SELECT * FROM {table_name(session['user_id'])}")
 
     # Iterating over each stock
     for stock in stocks:
@@ -119,18 +119,16 @@ def buy():
                     , shares=request.form.get("shares"), price=stock["price"])
 
         # Add stock
-        current = db.execute("SELECT * FROM :name WHERE symbol=:symbol", name=table_name(session["user_id"]), symbol=stock["symbol"])
+        current = db.execute(f"SELECT * FROM {table_name(session['user_id'])} WHERE symbol=:symbol", symbol=stock["symbol"])
 
         if len(current) == 0:
-            db.execute("INSERT INTO :name (symbol, shares, avg, total_bought) VALUES (:symbol, :shares, :avg, :total_bought)"
-                        , name=table_name(session["user_id"])
+            db.execute(f"INSERT INTO {table_name(session['user_id'])} (symbol, shares, avg, total_bought) VALUES (:symbol, :shares, :avg, :total_bought)"
                         , symbol = stock["symbol"]
                         , shares = request.form.get("shares")
                         , avg = float(stock["price"])
                         , total_bought = stock_amt)
         else:
-            db.execute("UPDATE :name SET shares=shares + :shares, avg=:avg, total_bought=total_bought + :value"
-                        , name=table_name(session["user_id"])
+            db.execute(f"UPDATE {table_name(session['user_id'])} SET shares=shares + :shares, avg=:avg, total_bought=total_bought + :value"
                         , shares = int(request.form.get("shares"))
                         , avg = (current[0]["total_bought"] + stock_amt)/float(current[0]["shares"] + int(request.form.get("shares")))
                         , value = stock_amt)
@@ -146,7 +144,7 @@ def buy():
 @login_required
 def sell():
     """Get all the stocks of the user"""
-    stocks = db.execute("SELECT symbol FROM :name", name=table_name(session["user_id"]))
+    stocks = db.execute(f"SELECT symbol FROM {table_name(session['user_id'])}")
 
     """Sell shares of stock"""
     if request.method == "POST":
@@ -156,7 +154,7 @@ def sell():
             flash("Please select a stock to sell", "danger")
             return render_template("sell.html", stocks=stocks)
 
-        stock = db.execute("SELECT * FROM :name WHERE symbol=:symbol", name=table_name(session["user_id"]), symbol=symbol)
+        stock = db.execute(f"SELECT * FROM {table_name(session['user_id'])} WHERE symbol=:symbol", symbol=symbol)
         if stock == None:
             flash("Please select a stock to sell", "danger                                                                                                                                                                                                                                                                                                                                                                                                   ")
             return render_template("sell.html", stocks=stocks)
@@ -188,12 +186,10 @@ def sell():
         shares_update = stock[0]["shares"] - shares
 
         if shares_update == 0:
-            db.execute("DELETE FROM :name WHERE symbol=:symbol"
-                        , name = table_name(session["user_id"])
+            db.execute(f"DELETE FROM {table_name(session['user_id'])} WHERE symbol=:symbol"
                         , symbol=symbol)
         else:
-            db.execute("UPDATE :name SET shares=:shares, avg=:avg, total_bought=:total WHERE symbol=:symbol"
-                        , name = table_name(session["user_id"])
+            db.execute(f"UPDATE {table_name(session['user_id'])} SET shares=:shares, avg=:avg, total_bought=:total WHERE symbol=:symbol"
                         , shares = shares_update
                         , avg = total/float(shares_update)
                         , total = total
@@ -321,7 +317,7 @@ def register():
                     username=request.form.get("username"), pwd=generate_password_hash(request.form.get("password")))
 
         # Create a new table to store user's stock data
-        db.execute("CREATE TABLE IF NOT EXISTS :name (symbol TEXT NOT NULL UNIQUE, shares INTEGER, avg NUMERIC, total_bought NUMERIC)", name=table_name(session["user_id"]))
+        db.execute(f"CREATE TABLE IF NOT EXISTS {table_name(session['user_id'])} (symbol TEXT NOT NULL UNIQUE, shares INTEGER, avg NUMERIC, total_bought NUMERIC)")
 
         flash("Successfully created new user", "success")
 
